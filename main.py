@@ -59,18 +59,31 @@ selected_images = {}
 title_label = Label(root, text="Check all invalid images", font=("Arial", 16, "bold"))
 title_label.grid(row=0, column=0, columnspan=num_columns, sticky="n")  # Span the title across all columns
 
-# Display images and checkboxes
+checkboxes = {}
+
+# Display buttons with images
 for i, img in enumerate(resized_images):
     # Convert PIL Image to PhotoImage
-    photo = ImageTk.PhotoImage(img.resize((image_width-20, image_height-20), Image.BICUBIC))  # Resize the image for checkbox
-    # Display image
-    label = Label(root, image=photo)
-    label.image = photo
-    label.grid(row=(i+1) // num_columns + 1, column=(i+1) % num_columns)  # Display images in a grid layout, add 1 to row to make space for the title
-    # Display checkbox
-    checkbox = Checkbutton(root, command=lambda i=i: selected_images.update({i: not selected_images.get(i, False)}))
+    photo = ImageTk.PhotoImage(img.resize((image_width-20, image_height-20), Image.BICUBIC))  # Resize the image for button
+    # Create checkbox
+    checkbox = Checkbutton(root, command=lambda i=i: toggle_checkbox(i))
     checkbox.grid(row=(i+1) // num_columns + 1, column=(i+1) % num_columns, sticky="s")  # Display checkboxes below each image
-    checkbox.config(borderwidth=0, highlightthickness=0)  # Make the checkbox invisible
+    checkboxes[i] = checkbox  # Add checkbox to the checkboxes dictionary
+    # Create button with image
+    button = Button(root, image=photo, command=lambda i=i: toggle_checkbox(i))
+    button.image = photo
+    button.grid(row=(i+1) // num_columns + 1, column=(i+1) % num_columns)  # Display buttons in a grid layout, add 1 to row to make space for the title
+    # Raise the checkbox above the button
+    checkbox.lift()
+    # Bind button click event to checkbox
+    button.configure(command=lambda i=i: toggle_checkbox(i))
+
+def toggle_checkbox(i):
+    selected_images[i] = not selected_images.get(i, False)
+    checkbox = checkboxes[i]
+    checkbox.select() if selected_images[i] else checkbox.deselect()
+
+
 
 # Function to handle submission
 def submit():
