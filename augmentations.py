@@ -9,7 +9,7 @@ from torchvision.transforms.transforms import Compose
 
 random_mirror = True
 
-
+# Augmentation functions
 def ShearX(img, v):  # [-0.3, 0.3]
     assert -0.3 <= v <= 0.3
     if random_mirror and random.random() > 0.5:
@@ -152,7 +152,7 @@ def SamplePairing(imgs):  # [0, 0.4]
 
     return f
 
-
+# Augmentations List from AutoAugment
 def augment_list(for_autoaug=True):  # 16 oeprations and their ranges
     l = [
         (ShearX, -0.3, 0.3),  # 0
@@ -180,36 +180,3 @@ def augment_list(for_autoaug=True):  # 16 oeprations and their ranges
             (TranslateYAbs, 0, 10),  # 9
         ]
     return l
-
-
-augment_dict = {fn.__name__: (fn, v1, v2) for fn, v1, v2 in augment_list()}
-
-
-def get_augment(name):
-    return augment_dict[name]
-
-
-def apply_augment(img, name, level):
-    augment_fn, low, high = get_augment(name)
-    return augment_fn(img.copy(), level * (high - low) + low)
-
-
-class Lighting(object):
-    """Lighting noise(AlexNet - style PCA - based noise)"""
-
-    def __init__(self, alphastd, eigval, eigvec):
-        self.alphastd = alphastd
-        self.eigval = torch.Tensor(eigval)
-        self.eigvec = torch.Tensor(eigvec)
-
-    def __call__(self, img):
-        if self.alphastd == 0:
-            return img
-
-        alpha = img.new().resize_(3).normal_(0, self.alphastd)
-        rgb = self.eigvec.type_as(img).clone() \
-            .mul(alpha.view(1, 3).expand(3, 3)) \
-            .mul(self.eigval.view(1, 3).expand(3, 3)) \
-            .sum(1).squeeze()
-
-        return img.add(rgb.view(3, 1, 1).expand_as(img))

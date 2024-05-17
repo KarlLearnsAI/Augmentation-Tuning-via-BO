@@ -2,39 +2,28 @@ from PIL import Image, ImageTk
 import tkinter as tk
 from tkinter import Button, Checkbutton, Label, PhotoImage
 import torchvision.transforms as transforms
+import augmentations
+import sys
 
 # Load the original image
-original_image = Image.open('image.png')
+augmentation_strength = 0.75
+original_image = Image.open('image.jpg')
 invalid_augmentations = {}
 checkboxes = {}
+augmented_images = []
+augment_dict = {fn.__name__: (fn, v1, v2) for fn, v1, v2 in augmentations.augment_list()}
 
-# Define augmentations
-augmentations = [
-    transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
-    transforms.RandomAffine(degrees=10, translate=(0.1, 0.1), scale=(0.8, 1.2), shear=10),
-    transforms.RandomHorizontalFlip(p=0.5),
-    transforms.RandomVerticalFlip(p=0.5),
-    transforms.RandomResizedCrop(size=(200, 200), scale=(0.8, 1.2), ratio=(0.9, 1.1)),
-    transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3, hue=0.2),
-    transforms.RandomAffine(degrees=20, translate=(0.2, 0.2), scale=(0.7, 1.3), shear=20),
-    transforms.RandomHorizontalFlip(p=0.5),
-    transforms.RandomVerticalFlip(p=0.5),
-    transforms.RandomResizedCrop(size=(200, 200), scale=(0.7, 1.3), ratio=(0.8, 1.2)),
-    transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4, hue=0.3),
-    transforms.RandomAffine(degrees=30, translate=(0.3, 0.3), scale=(0.6, 1.4), shear=30),
-    transforms.RandomHorizontalFlip(p=0.5),
-    transforms.RandomVerticalFlip(p=0.5),
-    transforms.RandomResizedCrop(size=(200, 200), scale=(0.6, 1.4), ratio=(0.7, 1.3)),
-    transforms.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.5, hue=0.4),
-    transforms.RandomAffine(degrees=40, translate=(0.4, 0.4), scale=(0.5, 1.5), shear=40),
-    transforms.RandomHorizontalFlip(p=0.5),
-    transforms.RandomVerticalFlip(p=0.5),
-    transforms.RandomResizedCrop(size=(200, 200), scale=(0.5, 1.5), ratio=(0.6, 1.4)),
-]
+def get_augment(name):
+    return augment_dict[name]
+
+def apply_augment(img, name, level):
+    augment_fn, low, high = get_augment(name)
+    return augment_fn(img.copy(), level * (high - low) + low)
 
 # Apply augmentations
-augmented_images = [aug(original_image) for aug in augmentations]
-
+for cur_augmentation in list(augment_dict.keys()):
+    cur_image = apply_augment(original_image, cur_augmentation, augmentation_strength)
+    augmented_images.append(cur_image)
 
 # Create UI
 root = tk.Tk()
@@ -77,7 +66,6 @@ def submit():
         if i not in invalid_augmentations:
             invalid_augmentations[i] = False
     print(sorted(invalid_augmentations.items()))
-    # To-Do: Go to 2-start-points-creation and remove invalid augmentations from search space
 
 submit_button = Button(root, text="Submit", command=submit)
 submit_button.grid(row=num_rows+2, columnspan=num_columns, sticky="n")  # Span the button across all columns, add 2 to row to make space for the title and images
