@@ -65,9 +65,24 @@ def submit():
     for i in range(len(resized_images)):
         if i not in invalid_augmentations:
             invalid_augmentations[i] = False
-    print(sorted(invalid_augmentations.items()))
+            
+    mask = sorted(invalid_augmentations.items())
+    augmentation_names = list(augment_dict.keys())
+    
+    to_drop = []
+    for _, element in enumerate(mask):
+        to_drop.append(element[1])
+    
+    filtered_augmentations = [string for string, boolean in zip(augmentation_names, to_drop) if not boolean]
+    root.destroy()
+    # print("a")
+    # print(str(filtered_augmentations))
+    # print(str(filtered_augmentations).encode())
+    print(str(filtered_augmentations))
+    return
 
 submit_button = Button(root, text="Submit", command=submit)
 submit_button.grid(row=num_rows+2, columnspan=num_columns, sticky="n")  # Span the button across all columns, add 2 to row to make space for the title and images
+# submit_button.pack()
 
 root.mainloop()
