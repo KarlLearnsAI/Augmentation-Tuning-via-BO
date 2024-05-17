@@ -1,13 +1,12 @@
-import torch
 from PIL import Image, ImageTk
 import tkinter as tk
 from tkinter import Button, Checkbutton, Label, PhotoImage
-from PIL import ImageOps
-
 import torchvision.transforms as transforms
 
 # Load the original image
 original_image = Image.open('image.png')
+invalid_augmentations = {}
+checkboxes = {}
 
 # Define augmentations
 augmentations = [
@@ -33,71 +32,54 @@ augmentations = [
     transforms.RandomResizedCrop(size=(200, 200), scale=(0.5, 1.5), ratio=(0.6, 1.4)),
 ]
 
-# Apply augmentations and resize images
+# Apply augmentations
 augmented_images = [aug(original_image) for aug in augmentations]
+
 
 # Create UI
 root = tk.Tk()
 
-# Calculate the number of rows and columns based on the number of images
+# Calculate layout sizes
 num_images = len(augmented_images)
 num_columns = 6
 num_rows = (num_images + num_columns - 1) // num_columns
-
-# Calculate the desired image size to fit on the screen
 screen_width = root.winfo_screenwidth()
 screen_height = root.winfo_screenheight()
 image_width = screen_width // num_columns
 image_height = screen_height // num_rows
-
-# Resize the images
 resized_images = [img.resize((image_width, image_height), Image.BICUBIC) for img in augmented_images]
 
-selected_images = {}
-
-# Display title
 title_label = Label(root, text="Check all invalid images", font=("Arial", 16, "bold"))
 title_label.grid(row=0, column=0, columnspan=num_columns, sticky="n")  # Span the title across all columns
-
-checkboxes = {}
 
 # Display buttons with images
 for i, img in enumerate(resized_images):
     # Convert PIL Image to PhotoImage
     photo = ImageTk.PhotoImage(img.resize((image_width-20, image_height-20), Image.BICUBIC))  # Resize the image for button
-    # Create checkbox
+    # Create checkboxes
     checkbox = Checkbutton(root, command=lambda i=i: toggle_checkbox(i))
     checkbox.grid(row=(i+1) // num_columns + 1, column=(i+1) % num_columns, sticky="s")  # Display checkboxes below each image
-    checkboxes[i] = checkbox  # Add checkbox to the checkboxes dictionary
-    # Create button with image
+    checkboxes[i] = checkbox
+    # Create augmentations (buttons)
     button = Button(root, image=photo, command=lambda i=i: toggle_checkbox(i))
     button.image = photo
     button.grid(row=(i+1) // num_columns + 1, column=(i+1) % num_columns)  # Display buttons in a grid layout, add 1 to row to make space for the title
-    # Raise the checkbox above the button
     checkbox.lift()
-    # Bind button click event to checkbox
     button.configure(command=lambda i=i: toggle_checkbox(i))
 
 def toggle_checkbox(i):
-    selected_images[i] = not selected_images.get(i, False)
+    invalid_augmentations[i] = not invalid_augmentations.get(i, False)
     checkbox = checkboxes[i]
-    checkbox.select() if selected_images[i] else checkbox.deselect()
+    checkbox.select() if invalid_augmentations[i] else checkbox.deselect()
 
-
-
-# Function to handle submission
 def submit():
-    # Iterate through all images
     for i in range(len(resized_images)):
-        # If image is not selected, mark it as non-selected
-        if i not in selected_images:
-            selected_images[i] = False
-    # Print or do something with selected_images
-    print(sorted(selected_images.items()))
+        if i not in invalid_augmentations:
+            invalid_augmentations[i] = False
+    print(sorted(invalid_augmentations.items()))
+    # To-Do: Go to 2-start-points-creation and remove invalid augmentations from search space
 
-# Display submit button
 submit_button = Button(root, text="Submit", command=submit)
 submit_button.grid(row=num_rows+2, columnspan=num_columns, sticky="n")  # Span the button across all columns, add 2 to row to make space for the title and images
 
-# Start the UI
 root.mainloop()
