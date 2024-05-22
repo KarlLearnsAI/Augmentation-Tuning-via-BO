@@ -9,7 +9,7 @@ import json
 import sys
 
 
-def get_starting_points(search_space):
+def get_starting_points(search_space, image_path):
     print(f"This is my search space {search_space}")
      
     # Start
@@ -36,7 +36,6 @@ def get_starting_points(search_space):
         'level': hp.uniform('level', 0.0, 1.0),
     }
 
-    image_path = "image.jpg"
     image = Image.open(image_path)
 
     def sample_random_params():

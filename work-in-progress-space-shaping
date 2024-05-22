@@ -1,0 +1,105 @@
+from PIL import Image, ImageTk
+import tkinter as tk
+from tkinter import Button, Checkbutton, Label, PhotoImage
+import torchvision.transforms as transforms
+import augmentations
+import sys
+
+
+augmentation_strength = 0.75
+img_paths = ['../data/class1.jpg', '../data/class2.jpg', '../data/class1.jpg', '../data/class4.jpg', '../data/class5.jpg']
+images = []
+invalid_augmentations = {}
+checkboxes = {}
+augmented_images = []
+augment_dict = {fn.__name__: (fn, v1, v2) for fn, v1, v2 in augmentations.augment_list()}
+filtered_augmentations = []
+
+def get_augment(name):
+    return augment_dict[name]
+
+def apply_augment(img, name, level):
+    augment_fn, low, high = get_augment(name)
+    return augment_fn(img.copy(), level * (high - low) + low)
+
+# Load images
+for img_path in img_paths:
+    images.append(Image.open(img_path))
+
+# Apply augmentations
+for cur_augmentation in list(augment_dict.keys())[:4]:
+    for image in images:
+        cur_image = apply_augment(image, cur_augmentation, augmentation_strength)
+        augmented_images.append(cur_image)
+
+# Create UI
+root = tk.Tk()
+
+# Calculate layout sizes
+num_images = len(augmented_images)
+num_columns = 10  # Fixed number of columns
+num_rows = 5  # Fixed number of rows per column
+screen_width = root.winfo_screenwidth()
+screen_height = root.winfo_screenheight()
+image_width = screen_width // num_columns
+image_height = screen_height // (num_rows + 1)  # Add space for the checkbox
+resized_images = [img.resize((image_width, image_height), Image.BICUBIC) for img in augmented_images]
+
+# Display buttons with images
+for i, img in enumerate(resized_images):
+    # Convert PIL Image to PhotoImage
+    photo = ImageTk.PhotoImage(img.resize((image_width-20, image_height-20), Image.BICUBIC))  # Resize the image for button
+    # Calculate column and row indices
+    column = i // 5
+    row = i % 5 + 1  # Add 1 to row to make space for the title
+    # Create augmentations (buttons)
+    button = Button(root, image=photo, command=lambda i=i: toggle_checkbox(i // 5))
+    button.image = photo
+    button.grid(row=row, column=column, padx=10, pady=1)  # Display buttons in a grid layout with padding
+
+# Create checkboxes below each column of images
+for column in range(num_columns):
+    checkbox = Checkbutton(root, command=lambda column=column: toggle_checkbox(column))
+    checkbox.grid(row=num_rows + 1, column=column, sticky="s")  # Place checkboxes below each column of images
+    checkboxes[column] = checkbox
+
+def toggle_checkbox(column):
+    start_index = column * 5
+    end_index = min(start_index + 5, len(augmented_images))
+    is_checked = all(invalid_augmentations.get(i, False) for i in range(start_index, end_index))
+
+    for i in range(start_index, end_index):
+        invalid_augmentations[i] = not is_checked
+
+    checkbox = checkboxes[column]
+    if is_checked:
+        checkbox.deselect()
+    else:
+        checkbox.select()
+
+def submit():
+    global filtered_augmentations
+    for i in range(len(resized_images)):
+        if i not in invalid_augmentations:
+            invalid_augmentations[i] = False
+            
+    mask = sorted(invalid_augmentations.items())
+    augmentation_names = list(augment_dict.keys())
+    
+    to_drop = []
+    for _, element in enumerate(mask):
+        to_drop.append(element[1])
+    
+    filtered_augmentations = [string for string, boolean in zip(augmentation_names, to_drop) if not boolean]
+    root.destroy()
+
+title_label = Label(root, text="Check all invalid images", font=("Arial", 16, "bold"))
+title_label.grid(row=0, column=0, columnspan=num_columns, sticky="n")  # Span the title across all columns
+
+submit_button = Button(root, text="Submit", command=submit)
+submit_button.grid(row=num_rows + 2, columnspan=num_columns, sticky="n")  # Span the button across all columns, add 2 to row to make space for the title and images
+
+root.mainloop()
+
+def get_augmentation_space():
+    return filtered_augmentations
