@@ -5,13 +5,14 @@ import torchvision.transforms as transforms
 import augmentations
 import sys
 
-# Load the original image
+
 augmentation_strength = 0.75
 original_image = Image.open('image.jpg')
 invalid_augmentations = {}
 checkboxes = {}
 augmented_images = []
 augment_dict = {fn.__name__: (fn, v1, v2) for fn, v1, v2 in augmentations.augment_list()}
+filtered_augmentations = []
 
 def get_augment(name):
     return augment_dict[name]
@@ -38,8 +39,6 @@ image_width = screen_width // num_columns
 image_height = screen_height // num_rows
 resized_images = [img.resize((image_width, image_height), Image.BICUBIC) for img in augmented_images]
 
-title_label = Label(root, text="Check all invalid images", font=("Arial", 16, "bold"))
-title_label.grid(row=0, column=0, columnspan=num_columns, sticky="n")  # Span the title across all columns
 
 # Display buttons with images
 for i, img in enumerate(resized_images):
@@ -62,6 +61,7 @@ def toggle_checkbox(i):
     checkbox.select() if invalid_augmentations[i] else checkbox.deselect()
 
 def submit():
+    global filtered_augmentations
     for i in range(len(resized_images)):
         if i not in invalid_augmentations:
             invalid_augmentations[i] = False
@@ -78,11 +78,18 @@ def submit():
     # print("a")
     # print(str(filtered_augmentations))
     # print(str(filtered_augmentations).encode())
-    print(str(filtered_augmentations))
-    return
+    # print(str(filtered_augmentations))
+    # return
+
+
+title_label = Label(root, text="Check all invalid images", font=("Arial", 16, "bold"))
+title_label.grid(row=0, column=0, columnspan=num_columns, sticky="n")  # Span the title across all columns
 
 submit_button = Button(root, text="Submit", command=submit)
 submit_button.grid(row=num_rows+2, columnspan=num_columns, sticky="n")  # Span the button across all columns, add 2 to row to make space for the title and images
 # submit_button.pack()
 
 root.mainloop()
+
+def get_augmentation_space():
+    return filtered_augmentations
