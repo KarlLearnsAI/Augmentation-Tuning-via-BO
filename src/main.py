@@ -7,7 +7,11 @@ import augmentations
 def main():
     img_paths = ['../data/class1.jpg', '../data/class2.jpg', '../data/class1.jpg', '../data/class4.jpg', '../data/class5.jpg']
     img_path = '../data/image.jpg'
+<<<<<<< HEAD
     augment_list = list(augmentations.augment_list()[:5])#[:20]  # Specify the range of augmentations you want to use
+=======
+    augment_list = list(augmentations.augment_list()[:])#[:20]  # Specify the range of augmentations you want to use
+>>>>>>> 65e18381b6b7230ebaac85d9b3dab8b41eb4f6e5
 
     print(f"Length of augmentations: {len(augment_list)}")
     
