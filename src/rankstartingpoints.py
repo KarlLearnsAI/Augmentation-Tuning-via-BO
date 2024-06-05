@@ -7,9 +7,9 @@ import augmentations
 import tkinter as tk
 import json
 import sys
+import random
 
-
-def get_starting_points(search_space):
+def get_starting_points(search_space, image_path):
     print(f"This is my search space {search_space}")
      
     # Start
@@ -17,26 +17,18 @@ def get_starting_points(search_space):
     CREATE SUB-POLICIES + STARTING POINTS
     '''
     num_policies = 10
-    augment_dict = {fn.__name__: (fn, v1, v2) for fn, v1, v2 in augmentations.augment_list()}
-    # input_data = sys.stdin.read().strip()
-    search_space
-    print(search_space)
+    augment_dict = {fn.__name__: (fn, v1, v2) for fn, v1, v2 in augmentations.augment_list()} # get original augment dict
 
-    # print(augment_dict)
-    # augmentation_names = sys.stdin.readline().strip()
-    # print(f"Search Space: {augmentation_names}")
-    # print(augmentation_names)
-
-    # Change space to incoming output1 augment_dict
-    # output1 = sys.stdin.readline().strip()
-
+    # Filter the Auto Augment dict to only contain the user selected search space
+    augment_dict = {key: augment_dict[key] for key in search_space if key in augment_dict}
+    print(augment_dict)
+    
     space = {
         'policy': hp.choice('policy', list(range(0, len(augment_dict.keys())))),
         'prob': hp.uniform('prob', 0.0, 1.0),
         'level': hp.uniform('level', 0.0, 1.0),
     }
 
-    image_path = "image.jpg"
     image = Image.open(image_path)
 
     def sample_random_params():
@@ -62,22 +54,25 @@ def get_starting_points(search_space):
     augmented_images = []
     result = {}
 
+    # Apply augmentations with corresponding probability and magnitude/level
     for i in range(len(sub_policies)):
-        ret = apply_augment(image, policy_names[sub_policies[i][0]['policy']], sub_policies[i][0]['level'])
-        # print(f"First augmented with '{policy_names[sub_policies[i][0]['policy']]}' using magnitude {sub_policies[i][0]['level']}")
-        # print(f"Consecutively augmented with '{policy_names[sub_policies[i][1]['policy']]}' using magnitude {sub_policies[i][1]['level']}")
-        result = apply_augment(ret, policy_names[sub_policies[i][1]['policy']], sub_policies[i][1]['level'])
+        if random.random() < sub_policies[i][0]['prob']:
+            ret = apply_augment(image, policy_names[sub_policies[i][0]['policy']], sub_policies[i][0]['level'])
+        else:
+            ret = image
+        
+        if random.random() < sub_policies[i][1]['prob']:
+            result = apply_augment(ret, policy_names[sub_policies[i][1]['policy']], sub_policies[i][1]['level'])
+        else:
+            result = ret
+        
         augmented_images.append(result)
-        # result.save(f"augmentations/augmentation-{i}.jpg")
-        
-        
-        
+
     # End
     
     '''
     LET THE USER RANK SUB-POLICIES / STARTING POINTS
     '''
-
 
     class DraggableLabel(tk.Label):
         def __init__(self, master, app, image, **kwargs):
@@ -106,13 +101,16 @@ def get_starting_points(search_space):
     
     class DragAndDropApp(tk.Tk):
         global result
-        def __init__(self, images):
+        def __init__(self, images, sub_policies, policy_names):
             super().__init__()
             self.title("Order the Images")
             self.state('zoomed')  # Start the window in full width
             self.image_labels = []
             self.images = images
+            self.sub_policies = sub_policies
+            self.policy_names = policy_names
             self.order_dict = {}
+            self.image_to_photo = {}  # Mapping from PIL images to PhotoImages
             self.create_widgets()
     
         def create_widgets(self):
@@ -138,9 +136,9 @@ def get_starting_points(search_space):
                 label = DraggableLabel(frame, self, image=photo)
                 label.grid(row=1, column=i + 1, padx=5)
                 self.image_labels.append(label)
+                self.image_to_photo[image.tobytes()] = photo
     
             self.update_order()
-            # print(f"Initial Order: {self.order_dict}")
     
             # Add submit button
             submit_button = tk.Button(self, text="Submit", command=self.show_results)
@@ -168,23 +166,38 @@ def get_starting_points(search_space):
         def show_results(self):
             global result
             order_dict = {}
+            print(f"Length of image_labels: {len(self.image_labels)}")
+            print(self.image_labels)
+            print(f"Length of sub_policies: {len(self.sub_policies)}")
+            print(self.sub_policies)
+            
             for i, lbl in enumerate(self.image_labels):
-                # Get the policy, prob and level for this image
-                policy1 = policy_names[sub_policies[i][0]['policy']]
-                prob1 = sub_policies[i][0]['prob']
-                level1 = sub_policies[i][0]['level']
-                policy2 = policy_names[sub_policies[i][1]['policy']]
-                prob2 = sub_policies[i][1]['prob']
-                level2 = sub_policies[i][1]['level']
+                # Find the corresponding PIL image
+                photo_image = lbl.image
+                pil_image_bytes = next(pil_img_bytes for pil_img_bytes, photo_img in self.image_to_photo.items() if photo_img == photo_image)
+                sub_policy_index = self.images.index(Image.frombytes('RGB', (100, 100), pil_image_bytes))
 
+
+                
+                # Get the index of the PIL image
+                sub_policy_index = self.images.index(pil_image)
+                
+                # Get the policy, prob and level for this image
+                policy1 = self.policy_names[self.sub_policies[sub_policy_index][0]['policy']]
+                prob1 = self.sub_policies[sub_policy_index][0]['prob']
+                level1 = self.sub_policies[sub_policy_index][0]['level']
+                policy2 = self.policy_names[self.sub_policies[sub_policy_index][1]['policy']]
+                prob2 = self.sub_policies[sub_policy_index][1]['prob']
+                level2 = self.sub_policies[sub_policy_index][1]['level']
+                
                 # Create a name for this image
                 name = f"{policy1}-{policy2}"
-
+                
                 # Add the image to the dictionary with the created name
                 entry1 = OrderedDict([(policy1, ['prob1', prob1, 'level1', level1])])
                 entry2 = OrderedDict([(policy2, ['prob2', prob2, 'level2', level2])])
-                order_dict[name] = entry1, entry2 #  lbl.image,
-
+                order_dict[name] = entry1, entry2
+            
             # Print the order_dict
             print(order_dict)
             result = order_dict
@@ -193,14 +206,12 @@ def get_starting_points(search_space):
             self.destroy()
 
             # Convert the order_dict to a string and return it
-            
             # order_dict_str = str(order_dict)
             # order_dict_json = json.dumps(order_dict)
             # print(order_dict_json)
             # return
-
     
-    app = DragAndDropApp(augmented_images)
+    app = DragAndDropApp(augmented_images, sub_policies, policy_names)
     app.mainloop()
     
     return result
