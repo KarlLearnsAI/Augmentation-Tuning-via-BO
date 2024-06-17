@@ -89,7 +89,7 @@ class AugmentationDeselector:
             slider.set(self.augmentation_magnitude * 100)
             slider.grid(row=self.num_rows + 2, column=i - start_col, sticky="n")
             self.sliders[i] = slider
-
+            
             # Add min and max entry fields
             min_label = Label(root, text="Min.")
             min_label.grid(row=self.num_rows + 3, column=i - start_col, sticky="e")

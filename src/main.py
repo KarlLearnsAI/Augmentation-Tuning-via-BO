@@ -7,11 +7,7 @@ import augmentations
 def main():
     img_paths = ['../data/class1.jpg', '../data/class2.jpg', '../data/class1.jpg', '../data/class4.jpg', '../data/class5.jpg']
     img_path = '../data/image.jpg'
-<<<<<<< HEAD
     augment_list = list(augmentations.augment_list()[:5])#[:20]  # Specify the range of augmentations you want to use
-=======
-    augment_list = list(augmentations.augment_list()[:])#[:20]  # Specify the range of augmentations you want to use
->>>>>>> 65e18381b6b7230ebaac85d9b3dab8b41eb4f6e5
 
     print(f"Length of augmentations: {len(augment_list)}")
     
@@ -38,10 +34,6 @@ def main():
             entire_search_space.update(new_search_space)
             print(f"Current run: {new_search_space}")
             print(f"Updated dict: {entire_search_space}")
-            
-
-    #print("Selected augmentations:", valid_augmentations)
-    #print(valid_augmentations)
     
     extracted_search_space = {}
     for augmentation in valid_augmentations:
@@ -52,20 +44,10 @@ def main():
     
     print(extracted_search_space)
     
-    # entire_search_space = list(extracted_search_space.keys())
+    selected_images, starting_points = get_starting_points(entire_search_space, img_path)
+    for image_index in selected_images:
+        print(starting_points[image_index])
     
-    # entire_search_space = ['Solarize']
-    starting_points = get_starting_points(entire_search_space, img_path)
-    
-    #print(type(self.aug_min_max))
-    #print(self.aug_min_max['ShearX'])
-    
-    #image_path = "../data/image.jpg"
-    #augmentation_names = get_augmentation_space()
-    #print(augmentation_names)
-    
-    # starting_points = get_starting_points(valid_augmentations, img_path)
-    # print(starting_points)
 
 
 if __name__ == "__main__":
