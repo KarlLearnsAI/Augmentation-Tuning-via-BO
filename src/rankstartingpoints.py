@@ -79,20 +79,29 @@ class ImageCheckboxApp:
         self.root.quit()
 
 def get_starting_points(search_space, image_path):
-    print(f"This is my search space {search_space}")
-     
-    # Start
     '''
     CREATE SUB-POLICIES + STARTING POINTS
     '''
     num_policies = 60
 
-    augment_dict = {fn.__name__: (fn, v1, v2) for fn, v1, v2 in augmentations.augment_list()}  # get original augment dict
+    valid_augmentations = {fn.__name__: (fn, v1, v2) for fn, v1, v2 in augmentations.augment_list()}  # get original augment dict
 
     # Filter the Auto Augment dict to only contain the user selected search space
-    augment_dict = {key: augment_dict[key] for key in search_space if key in augment_dict}
-    print(augment_dict)
-
+    valid_augmentations = {key: valid_augmentations[key] for key in search_space if key in valid_augmentations}
+    
+    augment_dict = {}
+    
+    for key in search_space.keys():
+        if key in valid_augmentations: # all search space augmentations as key
+            fn, v1, v2 = valid_augmentations[key]
+            min_value = search_space[key]['min']
+            max_value = search_space[key]['max']
+            augment_dict[key] = (fn, v1, v2, min_value, max_value)
+        else:
+            print("MISSMATCH ERROR: rankstartingpoints.py l.96 detected a conflict with augmentation names.")
+    
+    print(f"This is my search space {augment_dict}")
+    
     space = {
         'policy': hp.choice('policy', list(range(0, len(augment_dict.keys())))),
         'prob': hp.uniform('prob', 0.0, 1.0),
@@ -109,9 +118,20 @@ def get_starting_points(search_space, image_path):
     def get_augment(name):
         return augment_dict[name]
 
-    def apply_augment(img, name, level):
-        augment_fn, low, high = get_augment(name)
-        return augment_fn(img.copy(), level * (high - low) + low)
+    def apply_augment(img, name, magnitude):
+        # low, high := actual parameter values (e.g. 0, 255)
+        # min_val, max_val := scaling values for magnitude tuning [0-1]
+        augment_fn, low, high, min_val, max_val = get_augment(name)
+    
+        # magnitude tuning: scaling low and high to user defined interval (e.g. 51-204 instead of 0-255 using min_val=0.2 and max_val=0.8)
+        scaled_low = low + (high - low) * min_val
+        scaled_high = low + (high - low) * max_val
+        
+        # scaling sampled magnitude into our magnitude tuned interval (e.g. magnitude 0.75 returns final magnitude of 165.75)
+        scaled_magnitude = magnitude * (scaled_high - scaled_low) + scaled_low
+        
+        # apply augmentation with final magnitude
+        return augment_fn(img.copy(), scaled_magnitude)
 
     sub_policies = []
     policy_names = list(augment_dict.keys())
@@ -124,8 +144,8 @@ def get_starting_points(search_space, image_path):
         sub_policy = []
         for j in range(2):  # Each sub-policy has 2 operations
             policy_sample = lhs_samples[i, j]
-            policy_index = int(policy_sample * num_policies_available)
-            policy_index = min(policy_index, num_policies_available - 1)
+            policy_index = int(policy_sample * num_policies_available) # discretize the by LHS [0-1] sampled policy index
+            policy_index = min(policy_index, num_policies_available - 1) # make sure policy index is not outside of bounds
             
             params = {
                 'policy': policy_index,
@@ -135,7 +155,7 @@ def get_starting_points(search_space, image_path):
             sub_policy.append(params)
         sub_policies.append(sub_policy)
 
-    print(f"Sampled by LHS:\n{sub_policies}")
+    print(f"All Subpolicies sampled by LHS:\n{sub_policies}")
     augmented_images = []
     result = {}
 
@@ -152,7 +172,7 @@ def get_starting_points(search_space, image_path):
     app = ImageCheckboxApp(root, augmented_images)
     root.mainloop()
 
-    return app.selected_images, sub_policies
+    return app.selected_images, sub_policies, policy_names
 
 
 if __name__ == "__main__":
