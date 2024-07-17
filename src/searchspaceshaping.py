@@ -1,7 +1,6 @@
 from PIL import Image, ImageTk
 import tkinter as tk
 from tkinter import Button, Checkbutton, Label, Scale, Entry
-import augmentations
 
 class AugmentationDeselector:
     def __init__(self, img_paths, augmentations, augmentation_magnitude=0.75):
@@ -21,7 +20,6 @@ class AugmentationDeselector:
         self.num_rows = 5
         self.load_images()
         self.apply_augmentations()
-
 
     def load_images(self):
         for img_path in self.img_paths:
@@ -89,8 +87,8 @@ class AugmentationDeselector:
             slider.set(self.augmentation_magnitude * 100)
             slider.grid(row=self.num_rows + 2, column=i - start_col, sticky="n")
             self.sliders[i] = slider
-            
-            # Add min and max entry fields
+
+            # Add min and max entry fields for all columns
             min_label = Label(root, text="Min.")
             min_label.grid(row=self.num_rows + 3, column=i - start_col, sticky="e")
             min_entry = Entry(root)
@@ -105,23 +103,23 @@ class AugmentationDeselector:
             max_entry.grid(row=self.num_rows + 4, column=i - start_col, sticky="w")
             self.max_entries[i] = max_entry
 
+        # Add Min. and Max. labels before the first column sliders
+        if start_col == 0:
+            min_label = Label(root, text="Min.")
+            min_label.grid(row=self.num_rows + 3, column=0, sticky="e")
+            max_label = Label(root, text="Max.")
+            max_label.grid(row=self.num_rows + 4, column=0, sticky="e")
+
     def toggle_checkbox(self, column):
         start_index = column * self.num_rows
         end_index = min(start_index + self.num_rows, len(self.augmented_images))
         is_checked = all(self.invalid_augmentations.get(i, False) for i in range(start_index, end_index))
         for i in range(start_index, end_index):
             self.invalid_augmentations[i] = not is_checked
-
-        checkbox = self.checkboxes[column]
-        if is_checked:
-            checkbox.deselect()
-        else:
-            checkbox.select()
-
-    def next_page(self):
-        if self.current_page < self.total_pages - 1:
-            self.current_page += 1
-            self.display_images(self.root, self.current_page)
+            if not is_checked:
+                self.buttons[column][i % self.num_rows].config(relief="sunken")
+            else:
+                self.buttons[column][i % self.num_rows].config(relief="raised")
 
     def submit(self):
         self.unchecked_augmentations = [
@@ -141,6 +139,11 @@ class AugmentationDeselector:
             'min_max_values': self.aug_min_max
         }
         self.root.destroy()
+
+    def next_page(self):
+        if self.current_page < self.total_pages - 1:
+            self.current_page += 1
+            self.display_images(self.root, self.current_page)
 
     def run(self):
         self.root = tk.Tk()
