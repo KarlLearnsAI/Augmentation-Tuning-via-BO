@@ -5,10 +5,15 @@ from rankstartingpoints import get_starting_points
 import augmentations
 
 def main():
+    # GC10 Dataset
     # img_paths = ['../data/class1.jpg', '../data/class2.jpg', '../data/class1.jpg', '../data/class4.jpg', '../data/class5.jpg']
+    # img_path = '../data/image.jpg'
+    
+    # Aitex Dataset
     img_paths = ['../data/0004_002_01.jpg', '../data/0005_002_01.jpg', '../data/0015_006_02.jpg', '../data/0044_019_04.jpg', '../data/0095_010_03.jpg']
     img_path = '../data/image.png'
-    augment_list = list(augmentations.augment_list()[:10])#[:20]  # Specify the range of augmentations you want to use
+    
+    augment_list = list(augmentations.augment_list()[:])#[:20]  # Specify the range of augmentations you want to use
 
     print(f"Length of augmentations: {len(augment_list)}")
     
