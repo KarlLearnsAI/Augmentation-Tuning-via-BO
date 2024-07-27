@@ -1,10 +1,8 @@
-from collections import OrderedDict
+import tkinter as tk
 from PIL import Image, ImageTk
-from hyperopt.pyll.stochastic import sample
 from hyperopt import hp
 from scipy.stats import qmc
 import augmentations
-import tkinter as tk
 import numpy as np
 import random
 
@@ -19,11 +17,14 @@ class ImageCheckboxApp:
         self.create_widgets()
 
     def create_widgets(self):
+        headline = tk.Label(self.root, text="Select the top-5 augmented images", font=("Helvetica", 16))
+        headline.grid(row=0, columnspan=12, pady=(10, 20))
+
         images_per_row = 12
         
         for i, img in enumerate(self.augmented_images):
             img_label = tk.Label(self.root)
-            img_label.grid(row=i//images_per_row*2, column=i%images_per_row, padx=5, pady=5)
+            img_label.grid(row=i//images_per_row*2 + 1, column=i%images_per_row, padx=5, pady=5)
             self.image_labels.append(img_label)
 
             pil_img = Image.fromarray(np.array(img))
@@ -37,12 +38,12 @@ class ImageCheckboxApp:
 
             checkbox_var = tk.IntVar()
             checkbox = tk.Checkbutton(self.root, variable=checkbox_var, onvalue=1, offvalue=0, command=self.update_selection)
-            checkbox.grid(row=i//images_per_row*2 + 1, column=i%images_per_row, padx=5, pady=5)
+            checkbox.grid(row=i//images_per_row*2 + 2, column=i%images_per_row, padx=5, pady=5)
             self.checkboxes.append(checkbox)
             self.checkbox_vars.append(checkbox_var)
 
         submit_button = tk.Button(self.root, text="Submit", command=self.submit)
-        submit_button.grid(row=(len(self.augmented_images)//images_per_row + 1)*2 + 1, columnspan=images_per_row, pady=10)
+        submit_button.grid(row=(len(self.augmented_images)//images_per_row + 1)*2 + 2, columnspan=images_per_row, pady=10)
 
     def toggle_checkbox(self, idx):
         current_value = self.checkbox_vars[idx].get()
@@ -178,6 +179,6 @@ def get_starting_points(search_space, image_path):
 if __name__ == "__main__":
     search_space = {"color": True, "contrast": True, "rotate": True, "sharpness": True}
     image_path = "example_image.jpg"
-    selected_images = get_starting_points(search_space, image_path)
-    print(f"Selected Policies: {sub_policies[self.selected_images]}")
+    selected_images, sub_policies, policy_names = get_starting_points(search_space, image_path)
+    print(f"Selected Policies: {sub_policies[selected_images]}")
     print("Selected images:", selected_images)

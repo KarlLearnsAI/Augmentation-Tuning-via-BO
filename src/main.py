@@ -13,18 +13,16 @@ def main():
     img_paths = ['../data/0004_002_01.jpg', '../data/0005_002_01.jpg', '../data/0015_006_02.jpg', '../data/0044_019_04.jpg', '../data/0095_010_03.jpg']
     img_path = '../data/image.png'
     
-    augment_list = list(augmentations.augment_list()[:])#[:20]  # Specify the range of augmentations you want to use
+    augment_list = list(augmentations.augment_list()[:])
 
     print(f"Length of augmentations: {len(augment_list)}")
     
     for i in range(0, len(augment_list), 5):
-        # print(f"Current Range: {i}-{i+5}")
         if len(augment_list) >= i+5:
             augment_group = augment_list[i:i+5]
         elif i+5 == len(augment_list):
             break
         else:
-            # print(f"inside smaller group: {i}-{len(augment_list)}")
             augment_group = augment_list[i:len(augment_list)]
         # print(f"Evaluating: {augment_group}")
         selector = AugmentationDeselector(img_paths, augment_group)

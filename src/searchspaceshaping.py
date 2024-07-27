@@ -36,14 +36,16 @@ class AugmentationDeselector:
         self.augmented_images = []
         for augment_name in self.augment_dict.keys():
             for image in self.images:
+                print(augment_name)
                 cur_image = self.apply_augment(image, augment_name, self.augmentation_magnitude)
                 self.augmented_images.append(cur_image)
 
     def update_images(self, column):
-        augment_name = list(self.augment_dict.keys())[column]
+        # Subtract 1 from column to get the correct index in augment_dict
+        augment_name = list(self.augment_dict.keys())[column - 1]
         level = self.sliders[column].get() / 100.0
 
-        start_index = column * self.num_rows
+        start_index = (column - 1) * self.num_rows
         for j in range(self.num_rows):
             img_index = start_index + j
             original_image = self.images[j]
@@ -57,66 +59,79 @@ class AugmentationDeselector:
         self.buttons[column][row].image = photo
 
     def display_images(self, root, page):
+        # Initialize the buttons dictionary
+        self.buttons = {}
+
         start_col = page * self.num_columns
         end_col = min(start_col + self.num_columns, len(self.augment_dict))
 
         for widget in root.winfo_children():
             widget.grid_forget()
 
-        self.title_label.grid(row=0, column=0, columnspan=self.num_columns, sticky="n")
+        self.title_label.grid(row=0, column=0, columnspan=self.num_columns + 1, sticky="n")
         if page < self.total_pages - 1:
-            self.next_button.grid(row=self.num_rows + 4, column=self.num_columns - 1, sticky="e")
-        self.submit_button.grid(row=self.num_rows + 4, columnspan=self.num_columns, sticky="n")
+            self.next_button.grid(row=self.num_rows + 6, column=self.num_columns, sticky="e")
+        self.submit_button.grid(row=self.num_rows + 8, columnspan=self.num_columns + 1, sticky="n")
 
-        self.buttons = {}
+        original_label = Label(root, text="Original", font=("Arial", 12, "bold"))
+        original_label.grid(row=1, column=0, padx=10, pady=5)
+        self.buttons[0] = []
+        for j in range(self.num_rows):
+            photo = ImageTk.PhotoImage(self.images[j].resize((self.image_width - 20, self.image_height - 20), Image.BICUBIC))
+            button = Button(root, image=photo)
+            button.image = photo
+            button.grid(row=j + 2, column=0, padx=10, pady=1)
+            self.buttons[0].append(button)
+
         for i in range(start_col, end_col):
             augment_name = list(self.augment_dict.keys())[i]
-            self.buttons[i] = []
+            augment_label = Label(root, text=augment_name, font=("Arial", 12, "bold"))
+            augment_label.grid(row=1, column=i - start_col + 1, padx=10, pady=5)
+            self.buttons[i + 1] = []
             for j in range(self.num_rows):
                 img_index = i * self.num_rows + j
                 photo = ImageTk.PhotoImage(self.resized_images[img_index].resize((self.image_width - 20, self.image_height - 20), Image.BICUBIC))
-                button = Button(root, image=photo, command=lambda i=i: self.toggle_checkbox(i))
+                button = Button(root, image=photo, command=lambda i=i: self.toggle_checkbox(i + 1))
                 button.image = photo
-                button.grid(row=j + 1, column=i - start_col, padx=10, pady=1)
-                self.buttons[i].append(button)
-            checkbox = Checkbutton(root, command=lambda i=i: self.toggle_checkbox(i))
-            checkbox.grid(row=self.num_rows + 1, column=i - start_col, sticky="s")
-            self.checkboxes[i] = checkbox
+                button.grid(row=j + 2, column=i - start_col + 1, padx=10, pady=1)
+                self.buttons[i + 1].append(button)
+            self.checkboxes[i + 1] = Checkbutton(root, command=lambda i=i: self.toggle_checkbox(i + 1, from_checkbox=True))
+            self.checkboxes[i + 1].var = tk.IntVar()
+            self.checkboxes[i + 1].config(variable=self.checkboxes[i + 1].var)
+            self.checkboxes[i + 1].grid(row=self.num_rows + 2 + 1, column=i - start_col + 1, sticky="s")
 
-            slider = Scale(root, from_=0, to=100, orient="horizontal", command=lambda val, i=i: self.update_images(i))
+            slider = Scale(root, from_=0, to=100, orient="horizontal", command=lambda val, i=i: self.update_images(i + 1))
             slider.set(self.augmentation_magnitude * 100)
-            slider.grid(row=self.num_rows + 2, column=i - start_col, sticky="n")
-            self.sliders[i] = slider
+            slider.grid(row=self.num_rows + 3 + 1, column=i - start_col + 1, sticky="n")
+            self.sliders[i + 1] = slider
 
             # Add min and max entry fields for all columns
             min_label = Label(root, text="Min.")
-            min_label.grid(row=self.num_rows + 3, column=i - start_col, sticky="e")
+            min_label.grid(row=self.num_rows + 4 + 1, column=i - start_col + 1, sticky="e")
             min_entry = Entry(root)
             min_entry.insert(0, "0")
-            min_entry.grid(row=self.num_rows + 3, column=i - start_col, sticky="w")
-            self.min_entries[i] = min_entry
+            min_entry.grid(row=self.num_rows + 4 + 1, column=i - start_col + 1, sticky="w")
+            self.min_entries[i + 1] = min_entry
 
             max_label = Label(root, text="Max.")
-            max_label.grid(row=self.num_rows + 4, column=i - start_col, sticky="e")
+            max_label.grid(row=self.num_rows + 5 + 1, column=i - start_col + 1, sticky="e")
             max_entry = Entry(root)
             max_entry.insert(0, "100")
-            max_entry.grid(row=self.num_rows + 4, column=i - start_col, sticky="w")
-            self.max_entries[i] = max_entry
+            max_entry.grid(row=self.num_rows + 5 + 1, column=i - start_col + 1, sticky="w")
+            self.max_entries[i + 1] = max_entry
 
-        # Add Min. and Max. labels before the first column sliders
-        if start_col == 0:
-            min_label = Label(root, text="Min.")
-            min_label.grid(row=self.num_rows + 3, column=0, sticky="e")
-            max_label = Label(root, text="Max.")
-            max_label.grid(row=self.num_rows + 4, column=0, sticky="e")
+    def toggle_checkbox(self, column, from_checkbox=False):
+        if from_checkbox:
+            is_checked = self.checkboxes[column].var.get() == 1
+        else:
+            is_checked = not self.checkboxes[column].var.get()
+            self.checkboxes[column].var.set(is_checked)
 
-    def toggle_checkbox(self, column):
-        start_index = column * self.num_rows
+        start_index = (column - 1) * self.num_rows
         end_index = min(start_index + self.num_rows, len(self.augmented_images))
-        is_checked = all(self.invalid_augmentations.get(i, False) for i in range(start_index, end_index))
         for i in range(start_index, end_index):
-            self.invalid_augmentations[i] = not is_checked
-            if not is_checked:
+            self.invalid_augmentations[i] = is_checked
+            if is_checked:
                 self.buttons[column][i % self.num_rows].config(relief="sunken")
             else:
                 self.buttons[column][i % self.num_rows].config(relief="raised")
@@ -130,8 +145,8 @@ class AugmentationDeselector:
 
         for i in range(len(self.augment_dict)):
             augment_name = list(self.augment_dict.keys())[i]
-            min_value = float(self.min_entries[i].get()) / 100.0
-            max_value = float(self.max_entries[i].get()) / 100.0
+            min_value = float(self.min_entries[i + 1].get()) / 100.0
+            max_value = float(self.max_entries[i + 1].get()) / 100.0
             self.aug_min_max[augment_name] = {'min': min_value, 'max': max_value}
 
         self.filtered_augmentations = {
@@ -150,7 +165,7 @@ class AugmentationDeselector:
         self.total_pages = (len(self.augment_dict) + self.num_columns - 1) // self.num_columns
         screen_width = self.root.winfo_screenwidth()
         screen_height = self.root.winfo_screenheight()
-        self.image_width = screen_width // self.num_columns
+        self.image_width = screen_width // (self.num_columns + 1)
         self.image_height = screen_height // (self.num_rows + 2)
         self.resized_images = [img.resize((self.image_width, self.image_height), Image.BICUBIC) for img in self.augmented_images]
 
