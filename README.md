@@ -8,18 +8,18 @@ First, the expert is queried to evaluate individual augmentations, either by rem
 Latin Hypercube Sampling (LHS) is then used to sample uniformly from this pruned search space.
 The second query presents the sampled sub-policy points to the expert and lets them decide which ones to use as starting points for the warm started BO.
 
-![Figure 4.1](flow-chart.png)
+![Figure 4.1](data\bachelor-thesis-figures\flow-chart.png)
 
 ---
 
 ### Steps 1-3: First Expert Query and Search Space Pruning
 The first query includes the min-max values mentioned above to limit the range of strengths from which the BO algorithm can choose, while the invalid checkbox completely removes the selected augmentation. The slider simulates the individual augmentation strength by applying it to 5 different images to experiment with the effects of augmentation strength.
 
-![Figure 4.2](search-space-shaping.png)
+![Figure 4.2](data\bachelor-thesis-figures\search-space-shaping.png)
 
 ---
 
 ### Steps 4-5: Second Expert Query and LHS Sampling
 The second query presents the final augmented images to the expert. As explained in the bachelor thesis, the applied augmentations are not the individual ones, but the LHS-sampled augmentation sub-policies. Thus, each image was augmented by augmentation 1 with the probability and strength chosen by BO, and then augmented by augmentation 2 with it's respective probability and strength.
 
-![Figure 4.3](initial-points.png)
+![Figure 4.3](data\bachelor-thesis-figures\initial-points.png)
